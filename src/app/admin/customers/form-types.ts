@@ -1,0 +1,4 @@
+export type Address = { label: string; street: string; city: string; state: string; zip: string; country: string; defaultShipping: boolean; defaultBilling: boolean };
+export type FormData = { avatar: string; firstName: string; lastName: string; email: string; phone: string; gender: string; dateOfBirth: string; language: string; currency: string; addresses: Address[]; status: string; customerType: string; taxExempt: boolean; sendInvite: boolean; emailVerified: boolean; marketing: boolean; password: string; notes: string; tags: string[] };
+export const inputClass = "w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-transparent focus:ring-2 focus:ring-indigo-500";
+export const toggleClass = (on: boolean) => `relative h-6 w-11 rounded-full transition ${on ? "bg-indigo-600" : "bg-gray-200"}`;

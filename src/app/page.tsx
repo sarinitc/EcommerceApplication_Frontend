@@ -1,21 +1,55 @@
-import Image from "next/image";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { CartBadge } from "@/src/components/cart/CartBadge";
+import { UserAvatar } from "@/src/components/account/UserAvatar";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-          Ecommerce Application
-        </h1>
-      </main>
-    </div>
-  );
+const categories = [
+  { name: "Electronics", detail: "Designed for daily rituals", image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=85" },
+  { name: "Fashion", detail: "Quiet confidence, considered", image: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=1200&q=85" },
+  { name: "Home & Living", detail: "Objects for slower moments", image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=85" },
+  { name: "Accessories", detail: "The finishing touch", image: "https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&w=1200&q=85" },
+];
+
+function Icon({ name, className = "" }: { name: "arrow" | "bag" | "search" | "shield" | "support" | "truck" | "user"; className?: string }) {
+  const paths = {
+    arrow: <path d="M5 12h14m-6-6 6 6-6 6" />,
+    bag: <><path d="M5 8h14l-1 12H6z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></>,
+    search: <><circle cx="11" cy="11" r="6" /><path d="m20 20-4.2-4.2" /></>,
+    shield: <><path d="M12 3 19 6v5c0 4.6-3 7.9-7 10-4-2.1-7-5.4-7-10V6z" /><path d="m9 12 2 2 4-4" /></>,
+    support: <><path d="M4 13v-1a8 8 0 0 1 16 0v1" /><path d="M4 13h3v5H5a1 1 0 0 1-1-1zM20 13h-3v5h2a1 1 0 0 0 1-1z" /><path d="M17 18c0 2-1.7 3-4 3h-1" /></>,
+    truck: <><path d="M3 6h11v10H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="18" cy="18" r="1.5" /></>,
+    user: <><circle cx="12" cy="8" r="3.5" /><path d="M5 21a7 7 0 0 1 14 0" /></>,
+  };
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className={className}>{paths[name]}</svg>;
+}
+
+const benefits = [
+  { icon: "truck" as const, title: "Free shipping", text: "On orders over $50" },
+  { icon: "shield" as const, title: "Secure payment", text: "Protected checkout" },
+  { icon: "support" as const, title: "Here when you need us", text: "24/7 customer care" },
+];
+
+export default async function Home() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  return <main className="min-h-screen overflow-x-hidden bg-[#f7f7f4] text-[#172033] selection:bg-[#cdd7ff] selection:text-[#172033]">
+    <style>{`@keyframes indigo-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes indigo-drift{from{transform:scale(1.02)}to{transform:scale(1.08)}}.indigo-rise{animation:indigo-rise .7s cubic-bezier(.22,1,.36,1) both}.indigo-drift{animation:indigo-drift 12s ease-in-out alternate infinite}@media (prefers-reduced-motion:reduce){.indigo-rise,.indigo-drift{animation:none}}`}</style>
+    <header className="sticky top-0 z-30 border-b border-slate-900/5 bg-[#f7f7f4]/90 shadow-[0_8px_24px_rgba(23,32,51,.07)] backdrop-blur-xl"><div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-5 px-5 sm:px-8 lg:px-10">
+      <Link href="/" className="group flex items-center gap-2.5 text-[#2720a7]" aria-label="IndigoStore home"><span className="relative grid h-8 w-8 place-items-center overflow-hidden rounded-[10px] bg-[#2720a7] shadow-[0_5px_12px_rgba(39,32,167,.25)]"><span className="h-3.5 w-3.5 rotate-45 rounded-[3px] border border-white/80" /><span className="absolute h-2 w-2 rounded-full bg-[#b9b6ff]" /></span><span className="font-[Georgia,serif] text-xl font-bold tracking-[-0.06em]">Indigo<span className="text-[#172033]">Store</span></span></Link>
+      <nav className="hidden items-center gap-6 text-[11px] font-semibold uppercase tracking-[.14em] text-slate-500 md:flex" aria-label="Primary navigation"><Link className="relative py-2 text-[#2720a7] after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:bg-[#5049db]" href="/" aria-current="page">Shop</Link><Link className="relative py-2 transition hover:text-[#2720a7] hover:after:absolute hover:after:inset-x-0 hover:after:-bottom-0.5 hover:after:h-px hover:after:bg-[#a8a5ff]" href="/deals">Deals</Link><Link className="relative py-2 transition hover:text-[#2720a7] hover:after:absolute hover:after:inset-x-0 hover:after:-bottom-0.5 hover:after:h-px hover:after:bg-[#a8a5ff]" href="/new-arrivals">New arrivals</Link></nav>
+      <div className="flex items-center gap-1.5 sm:gap-2"><label className="hidden h-9 w-9 items-center gap-2 overflow-hidden rounded-full border border-slate-300/80 bg-white/70 px-2.5 text-slate-500 transition-all duration-300 focus-within:w-48 focus-within:border-[#5851d8] focus-within:ring-4 focus-within:ring-[#5851d8]/10 hover:w-48 sm:flex"><Icon name="search" className="h-4 w-4 shrink-0 fill-none stroke-current stroke-[1.8]" /><input className="min-w-0 bg-transparent text-xs text-slate-700 opacity-0 outline-none placeholder:text-slate-400 transition group-focus-within:opacity-100 focus:opacity-100" type="search" placeholder="Search collection" aria-label="Search the collection" /></label><Link className="relative grid h-9 w-9 place-items-center rounded-full text-slate-600 transition hover:bg-[#e6e6ff] hover:text-[#2720a7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5851d8]" href="/cart" aria-label="Shopping bag"><Icon name="bag" className="h-[18px] w-[18px] fill-none stroke-current stroke-[1.7]" /><CartBadge /></Link><Link className="grid h-9 w-9 place-items-center overflow-hidden rounded-full text-slate-600 transition hover:bg-[#e6e6ff] hover:text-[#2720a7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5851d8]" href="/profile?chooseProfilePicture=1" aria-label="Your profile"><UserAvatar className="h-full w-full object-cover" fallback={<Icon name="user" className="h-[18px] w-[18px] fill-none stroke-current stroke-[1.7]" />} /></Link></div>
+    </div></header>
+
+    <section className="mx-auto max-w-7xl px-5 pt-5 sm:px-8 lg:px-10 lg:pt-8"><div className="relative isolate min-h-[580px] overflow-hidden rounded-[2rem] bg-[#20223d] sm:min-h-[620px]"><div className="indigo-drift absolute inset-0 -z-20 bg-[url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2200&q=90')] bg-cover bg-center" /><div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(20,22,41,.92)_0%,rgba(20,22,41,.70)_40%,rgba(20,22,41,.16)_73%,rgba(20,22,41,.05)_100%)]" /><div className="absolute inset-x-0 bottom-0 h-2/5 bg-[linear-gradient(0deg,rgba(20,22,41,.38),transparent)]" />
+      <div className="indigo-rise flex min-h-[580px] max-w-xl flex-col justify-center px-7 py-16 text-white sm:min-h-[620px] sm:px-14 lg:px-20" style={{ animationDelay: "80ms" }}><p className="mb-4 flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[.18em] text-[#d7d6ff]"><span className="h-px w-7 bg-[#a8a5ff]" />New collection <span className="text-[#a8a5ff]">/</span> 2026</p><h1 className="max-w-lg font-[Georgia,serif] text-5xl font-semibold leading-[.94] tracking-[-.065em] sm:text-6xl lg:text-7xl">Objects for a <em className="font-normal text-[#d8d6ff]">well-lived</em> life.</h1><p className="mt-7 max-w-md text-sm leading-7 text-slate-200 sm:text-[15px]">Curated pieces with enduring materials, thoughtful design, and a quieter point of view.</p><div className="mt-9 flex flex-wrap gap-3"><Link className="group inline-flex items-center gap-3 rounded-full bg-[#4d46d8] px-6 py-3.5 text-xs font-bold text-white shadow-[0_12px_28px_rgba(0,0,0,.28)] transition duration-300 hover:-translate-y-1 hover:bg-[#625be8] hover:shadow-[0_16px_34px_rgba(0,0,0,.36)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white" href="/products">Explore collection <Icon name="arrow" className="h-4 w-4 fill-none stroke-current stroke-2 transition-transform group-hover:translate-x-1" /></Link><Link className="rounded-full border border-white/35 px-6 py-3.5 text-xs font-bold text-white transition hover:border-white hover:bg-white/10" href="/new-arrivals">View the journal</Link></div></div>
+    </div></section>
+
+    <section className="relative z-10 mx-auto -mt-10 max-w-6xl px-5 sm:px-8 lg:px-10" aria-label="Store benefits"><div className="grid overflow-hidden rounded-2xl border border-white/70 bg-[#fcfcfb]/95 shadow-[0_18px_45px_rgba(32,34,61,.13)] backdrop-blur md:grid-cols-3">{benefits.map((benefit) => <div className="group flex items-center gap-4 border-b border-slate-200/80 px-6 py-6 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0 sm:px-8" key={benefit.title}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#ecebff] text-[#4841cb] transition duration-300 group-hover:-translate-y-1 group-hover:bg-[#4841cb] group-hover:text-white"><Icon name={benefit.icon} className="h-5 w-5 fill-none stroke-current stroke-[1.7]" /></span><span><strong className="block text-xs font-bold text-slate-800">{benefit.title}</strong><span className="mt-1 block text-[11px] text-slate-500">{benefit.text}</span></span></div>)}</div></section>
+
+    <section className="mx-auto max-w-7xl px-5 pb-20 pt-20 sm:px-8 lg:px-10 lg:pb-28"><div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#5b55d4]">The daily edit</p><h2 className="mt-3 font-[Georgia,serif] text-4xl font-semibold tracking-[-.055em] text-[#172033] sm:text-5xl">Shop by category</h2></div><p className="max-w-xs text-sm leading-6 text-slate-500">Find beautiful, useful things made to be kept close.</p></div><div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">{categories.map((category, index) => <Link className="group relative isolate min-h-[330px] overflow-hidden rounded-2xl bg-slate-900 shadow-[0_12px_25px_rgba(31,40,62,.10)] transition duration-500 hover:-translate-y-2 hover:shadow-[0_22px_44px_rgba(31,40,62,.20)] sm:min-h-[360px]" href={`/products?category=${encodeURIComponent(category.name)}`} key={category.name}><div className="absolute inset-0 -z-20 bg-cover bg-center transition duration-700 ease-out group-hover:scale-110" style={{ backgroundImage: `url(${category.image})`, backgroundPosition: index === 1 ? "55% center" : "center" }} /><div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(12,16,30,.02)_25%,rgba(12,16,30,.85)_100%)] transition group-hover:bg-[linear-gradient(180deg,rgba(12,16,30,.12)_10%,rgba(12,16,30,.92)_100%)]" /><div className="absolute inset-x-0 bottom-0 p-6 text-white"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-white/65">0{index + 1}</p><h3 className="mt-2 font-[Georgia,serif] text-2xl tracking-[-.045em]">{category.name}</h3><div className="mt-3 grid grid-rows-[0fr] overflow-hidden transition-all duration-500 group-hover:grid-rows-[1fr]"><p className="min-h-0 text-xs leading-5 text-white/75">{category.detail}</p></div><span className="mt-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.12em]">Discover <Icon name="arrow" className="h-4 w-4 fill-none stroke-current stroke-2 transition-transform group-hover:translate-x-1" /></span></div></Link>)}</div></section>
+
+    <footer className="border-t border-slate-200 bg-[#ebedf0]"><div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:grid-cols-2 sm:px-8 lg:grid-cols-[1.8fr_repeat(3,1fr)] lg:px-10"><div><Link className="font-[Georgia,serif] text-xl font-bold tracking-[-.06em] text-[#2720a7]" href="/">Indigo<span className="text-[#172033]">Store</span></Link><p className="mt-4 max-w-52 text-xs leading-5 text-slate-500">Elevating the everyday through objects with purpose and presence.</p></div>{["Company", "Support", "Legal"].map((title) => <div key={title}><h3 className="text-[10px] font-bold uppercase tracking-[.18em] text-[#4540bc]">{title}</h3><div className="mt-4 grid gap-3 text-xs text-slate-500"><a className="transition hover:text-[#2720a7]" href="#">{title === "Company" ? "Our story" : title === "Support" ? "Shipping & returns" : "Privacy"}</a><a className="transition hover:text-[#2720a7]" href="#">{title === "Company" ? "Careers" : title === "Support" ? "Contact care" : "Terms of service"}</a></div></div>)}</div><div className="mx-auto max-w-7xl border-t border-slate-300/70 px-5 py-5 text-[11px] text-slate-500 sm:px-8 lg:px-10">© 2026 IndigoStore. All rights reserved.</div></footer>
+  </main>;
 }

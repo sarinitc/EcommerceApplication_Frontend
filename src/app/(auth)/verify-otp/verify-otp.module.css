@@ -1,0 +1,38 @@
+.page {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: 28px 16px;
+  color: #172b4d;
+  background: linear-gradient(125deg, rgba(238, 244, 255, 0.96), rgba(250, 248, 255, 0.84)), url("https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2200&q=90") center / cover;
+}
+
+.card { width: min(100%, 500px); overflow: hidden; border: 1px solid rgba(201, 214, 234, 0.85); border-radius: 24px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 28px 80px rgba(27, 52, 93, 0.2); }
+.back { display: inline-flex; align-items: center; gap: 7px; padding: 20px 24px; color: #526581; font-size: 14px; font-weight: 650; }
+.back:hover { color: #0753d5; }
+.back svg { width: 19px; height: 19px; }
+.brand { position: absolute; left: 50%; padding-top: 21px; color: #0753d5; transform: translateX(-50%); font-size: 24px; font-weight: 800; letter-spacing: -1px; }
+.panel { margin: 0 14px 14px; padding: 34px 38px 38px; border: 1px solid #e6ebf4; border-radius: 18px; background: #fff; text-align: center; }
+.icon { display: grid; width: 54px; height: 54px; margin: 0 auto 17px; place-items: center; border-radius: 17px; background: #e8f0ff; color: #0753d5; }
+.icon svg { width: 29px; height: 29px; }
+.panel h1 { margin: 0; color: #14284a; font-size: 28px; letter-spacing: -0.8px; }
+.panel > p { max-width: 310px; margin: 10px auto 26px; color: #657791; font-size: 15px; line-height: 1.55; }
+.form { display: grid; gap: 12px; text-align: left; }
+.form label { color: #344969; font-size: 13px; font-weight: 750; letter-spacing: 0.02em; }
+.emailHint { overflow: hidden; margin: -4px 0 4px; padding: 9px 12px; border: 1px solid #dce8fc; border-radius: 10px; background: #f4f8ff; color: #48617f; font-size: 13px; font-weight: 600; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.form button { height: 52px; margin-top: 7px; border: 0; border-radius: 10px; background: #0753d5; color: #fff; cursor: pointer; font: inherit; font-size: 15px; font-weight: 750; transition: background 160ms ease, transform 160ms ease; }
+.form button:hover:not(:disabled) { background: #0348bc; transform: translateY(-1px); }
+.form button:disabled { cursor: not-allowed; opacity: 0.58; }
+.resendButton { height: auto !important; margin-top: -3px !important; padding: 7px; background: transparent !important; color: #0753d5 !important; font-size: 13px !important; font-weight: 700 !important; }
+.resendButton:hover:not(:disabled) { background: #f1f6ff !important; transform: none !important; }
+.notice, .error { margin: -3px 0 0; font-size: 13px; line-height: 1.45; text-align: center; }
+.notice { color: #16723a; }
+.error { color: #b42318; }
+.back:focus-visible, .brand:focus-visible, .form button:focus-visible { outline: 3px solid rgba(7, 83, 213, 0.3); outline-offset: 3px; }
+
+@media (max-width: 520px) {
+  .card { border-radius: 19px; }
+  .brand { padding-top: 20px; font-size: 21px; }
+  .back { padding: 19px; }
+  .panel { margin: 0 10px 10px; padding: 30px 21px 28px; }
+}

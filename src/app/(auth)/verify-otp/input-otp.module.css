@@ -1,0 +1,31 @@
+.otp {
+  width: 100%;
+  justify-content: center;
+  margin: 2px 0 4px;
+}
+
+.segments {
+  justify-content: center;
+  gap: 8px;
+}
+
+.segment {
+  width: 44px;
+  height: 56px;
+  border-color: #c8d4e7;
+  border-radius: 11px;
+  background: #f9fbff;
+  color: #172b4d;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.error {
+  margin: 8px 0 -4px;
+  text-align: center;
+}
+
+@media (max-width: 390px) {
+  .segments { gap: 5px; }
+  .segment { width: 39px; height: 52px; }
+}

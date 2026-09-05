@@ -1,0 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
+
+import Link from "next/link";
+import type { TopProduct } from "@/src/lib/dashboard";
+
+export function TopProductsList({ products }: { products: TopProduct[] }) { return <section className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm"><div className="mb-4 flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">Top Selling Products</h2><Link href="/admin/products" className="text-sm font-semibold text-indigo-500 hover:text-indigo-700">View all products</Link></div><ol className="divide-y divide-gray-100">{products.map((product, index) => <li className="flex items-center gap-3 py-3" key={product.productId}><span className="grid h-6 w-6 place-items-center rounded-md bg-indigo-50 text-xs font-bold text-indigo-600">{index + 1}</span>{product.image ? <img src={product.image} alt="" className="h-10 w-10 rounded-lg object-cover" /> : <span className="h-10 w-10 rounded-lg bg-slate-100" />}<span className="flex-1 text-sm font-semibold text-slate-700">{product.productName}</span><span className="text-xs font-medium text-slate-400">{product.unitsSold} Sold</span></li>)}{products.length === 0 && <li className="py-8 text-center text-sm text-slate-400">No sales yet.</li>}</ol></section>; }
