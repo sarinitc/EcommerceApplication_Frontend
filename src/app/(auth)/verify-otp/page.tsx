@@ -1,8 +1,8 @@
 import Link from "next/link";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import LockClockOutlinedIcon from "@mui/icons-material/LockClockOutlined";
-import { VerifyOtpForm } from "./VerifyOtpForm";
-import styles from "./verify-otp.module.css";
+import { VerifyOtpForm } from "@/components/forms/verify-otp/VerifyOtpForm";
+import styles from "@/components/forms/verify-otp/verify-otp.module.css";
 
 export default function VerifyOtpPage() {
   return (

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import { ResetPasswordForm } from "./ResetPasswordForm";
-import styles from "./reset-password.module.css";
+import { ResetPasswordForm } from "@/components/forms/reset-password/ResetPasswordForm";
+import styles from "@/components/forms/reset-password/reset-password.module.css";
 
 export default function ResetPasswordPage() {
   return (

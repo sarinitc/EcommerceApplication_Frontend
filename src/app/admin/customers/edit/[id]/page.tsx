@@ -1,8 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { AdminShell } from "../../../AdminShell";
-import { CustomerForm } from "../../CustomerForm";
-import type { Customer } from "../../customer-data";
+import { AdminShell } from "@/components/features/admin/AdminShell";
+import { CustomerForm } from "@/components/features/admin/customers/CustomerForm";
+import type { Customer } from "@/components/features/admin/customers/customer-data";
 
 type BackendCustomer = { customerId: number; username: string; email: string; phoneNumber?: string; profileImage?: string; accountStatus?: string; location?: { city?: string; country?: string }; orderCount?: number; totalSpent?: number; lastOrder?: { orderId: number; orderDate: string; total: number; status: string } | null };
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");

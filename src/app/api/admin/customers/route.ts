@@ -5,6 +5,9 @@ const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.rep
 export async function GET(request: Request) {
   if (!backendUrl) return Response.json({ message: "The customer API is not configured." }, { status: 500 });
   const session = await auth();
+  if (!(session?.user as { roles?: string[] } | undefined)?.roles?.includes("ADMIN")) {
+    return Response.json({ message: "Administrator access is required." }, { status: 403 });
+  }
   const token = (session as (typeof session & { backendAccessToken?: string }) | null)?.backendAccessToken;
   if (!token) return Response.json({ message: "Please sign in to view customers." }, { status: 401 });
   const params = new URL(request.url).searchParams;
@@ -19,6 +22,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   if (!backendUrl) return Response.json({ message: "The customer API is not configured." }, { status: 500 });
   const session = await auth();
+  if (!(session?.user as { roles?: string[] } | undefined)?.roles?.includes("ADMIN")) {
+    return Response.json({ message: "Administrator access is required." }, { status: 403 });
+  }
   const token = (session as (typeof session & { backendAccessToken?: string }) | null)?.backendAccessToken;
   if (!token) return Response.json({ message: "Please sign in to create customers." }, { status: 401 });
   const body = await request.json().catch(() => null);

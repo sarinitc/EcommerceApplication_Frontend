@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { AdminShell } from "../../../AdminShell";
-import { EditProductForm } from "./EditProductForm";
+import { AdminShell } from "@/components/features/admin/AdminShell";
+import { EditProductForm } from "@/components/features/admin/products/EditProductForm";
 
 export default async function EditProductPage() {
   const session = await auth();

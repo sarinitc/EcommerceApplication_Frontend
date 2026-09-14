@@ -1,8 +1,8 @@
 import Link from "next/link";
 import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import { ForgotPasswordForm } from "./ForgotPasswordForm";
-import styles from "./forgot-password.module.css";
+import { ForgotPasswordForm } from "@/components/forms/forgot-password/ForgotPasswordForm";
+import styles from "@/components/forms/forgot-password/forgot-password.module.css";
 
 export default function ForgotPasswordPage() {
   return (

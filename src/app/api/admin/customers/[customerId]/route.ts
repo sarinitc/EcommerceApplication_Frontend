@@ -5,6 +5,9 @@ const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.rep
 export async function DELETE(_: Request, { params }: { params: Promise<{ customerId: string }> }) {
   if (!backendUrl) return Response.json({ message: "The customer API is not configured." }, { status: 500 });
   const session = await auth();
+  if (!(session?.user as { roles?: string[] } | undefined)?.roles?.includes("ADMIN")) {
+    return Response.json({ message: "Administrator access is required." }, { status: 403 });
+  }
   const token = (session as (typeof session & { backendAccessToken?: string }) | null)?.backendAccessToken;
   if (!token) return Response.json({ message: "Please sign in to delete customers." }, { status: 401 });
   const { customerId } = await params;
@@ -18,6 +21,9 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ custome
 export async function PATCH(request: Request, { params }: { params: Promise<{ customerId: string }> }) {
   if (!backendUrl) return Response.json({ message: "The customer API is not configured." }, { status: 500 });
   const session = await auth();
+  if (!(session?.user as { roles?: string[] } | undefined)?.roles?.includes("ADMIN")) {
+    return Response.json({ message: "Administrator access is required." }, { status: 403 });
+  }
   const token = (session as (typeof session & { backendAccessToken?: string }) | null)?.backendAccessToken;
   if (!token) return Response.json({ message: "Please sign in to update customers." }, { status: 401 });
   const { customerId } = await params;
@@ -26,5 +32,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ cu
   if (!body || typeof body !== "object") return Response.json({ message: "A customer update payload is required." }, { status: 400 });
   const response = await fetch(`${backendUrl}/admin/customers/${customerId}`, { method: "PATCH", headers: { Authorization: `Bearer ${token.replace(/^Bearer\s+/i, "")}`, "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" });
   const data = await response.json().catch(() => null);
+  if (response.status === 204) return new Response(null, { status: 204 });
   return Response.json(data ?? { message: response.statusText }, { status: response.status });
 }

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { ToastProvider } from "@heroui/toast";
 import { SessionProvider } from "next-auth/react";
 import type { Session } from "next-auth";
-import { CartProvider } from "@/src/components/cart/CartContext";
+import { CartProvider } from "@/components/features/cart/CartContext";
 
 export function Providers({ children, session }: { children: ReactNode; session: Session | null }) {
   return (

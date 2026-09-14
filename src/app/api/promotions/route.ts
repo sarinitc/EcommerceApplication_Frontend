@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import type { PromotionListResponse } from "@/src/types/promotion";
+import type { PromotionListResponse } from "@/types/promotion";
 
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
 

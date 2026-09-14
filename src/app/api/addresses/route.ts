@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import type { AddressRequest } from "@/src/types/address";
+import type { AddressRequest } from "@/types/address";
 
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
 

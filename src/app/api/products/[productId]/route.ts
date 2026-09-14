@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
-import type { ApiResponse, Product, ProductRequest } from "@/src/lib/products";
+import type { Session } from "next-auth";
+import type { ApiResponse, Product, ProductRequest } from "@/types/product";
 
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
 
@@ -30,6 +31,19 @@ async function getAccessToken() {
   return token?.replace(/^Bearer\s+/i, "");
 }
 
+async function resolveSellerId(session: Session | null, jwt: string) {
+  let backendUserId = Number((session as (typeof session & { backendUserId?: string | number }) | null)?.backendUserId);
+  if (!Number.isInteger(backendUserId) || backendUserId <= 0) {
+    const currentUserResponse = await fetch(`${backendUrl}/auth/me`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+      cache: "no-store",
+    });
+    const currentUser = await currentUserResponse.json().catch(() => null) as { payload?: { userId?: number } } | null;
+    backendUserId = Number(currentUser?.payload?.userId);
+  }
+  return Number.isInteger(backendUserId) && backendUserId > 0 ? backendUserId : null;
+}
+
 export async function GET(_request: Request, { params }: { params: Promise<{ productId: string }> }) {
   if (!backendUrl) return Response.json({ message: "The product API is not configured." }, { status: 500 });
   const token = await getAccessToken();
@@ -55,12 +69,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
 
 export async function PUT(request: Request, { params }: { params: Promise<{ productId: string }> }) {
   if (!backendUrl) return Response.json({ message: "The product API is not configured." }, { status: 500 });
-  const token = await getAccessToken();
+  const session = await auth();
+  const token = (session as (typeof session & { backendAccessToken?: string }) | null)?.backendAccessToken?.replace(/^Bearer\s+/i, "");
   if (!token) return Response.json({ message: "Please sign in to update products." }, { status: 401 });
+
+  const backendUserId = await resolveSellerId(session, token);
+  if (!backendUserId) return Response.json({ message: "Unable to identify the signed-in seller." }, { status: 401 });
 
   const { productId } = await params;
   const product = await request.json() as ProductRequest;
-  const backendProduct = { ...product, image: restoreBackendImageUrl(product.image) };
+  const backendProduct = { ...product, sellerId: backendUserId, image: restoreBackendImageUrl(product.image) };
   const response = await fetch(`${backendUrl}/products/${encodeURIComponent(productId)}`, {
     method: "PUT",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

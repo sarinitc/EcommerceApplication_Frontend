@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import type { ApiResponse, Product, ProductPage, ProductRequest } from "@/src/lib/products";
+import type { ApiResponse, Product, ProductPage, ProductRequest } from "@/types/product";
 
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
 
