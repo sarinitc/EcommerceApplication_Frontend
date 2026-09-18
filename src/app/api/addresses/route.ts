@@ -3,12 +3,32 @@ import type { AddressRequest } from "@/types/address";
 
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
 
+async function getToken() {
+  const session = await auth();
+  return (session as (typeof session & { backendAccessToken?: string }) | null)?.backendAccessToken;
+}
+
+export async function GET() {
+  if (!backendUrl) return Response.json({ message: "The address API is not configured." }, { status: 500 });
+
+  const rawToken = await getToken();
+  if (!rawToken) return Response.json({ message: "Please sign in to view your addresses." }, { status: 401 });
+  const token = rawToken.replace(/^Bearer\s+/i, "");
+
+  const response = await fetch(`${backendUrl}/addresses`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const data = await response.json().catch(() => null);
+  return Response.json(data ?? { message: response.statusText }, { status: response.status });
+}
+
 export async function POST(request: Request) {
   if (!backendUrl) return Response.json({ message: "The address API is not configured." }, { status: 500 });
 
-  const session = await auth();
-  const accessToken = (session as (typeof session & { backendAccessToken?: string }) | null)?.backendAccessToken;
-  if (!accessToken) return Response.json({ message: "Please sign in to save an address." }, { status: 401 });
+  const rawToken = await getToken();
+  if (!rawToken) return Response.json({ message: "Please sign in to save an address." }, { status: 401 });
+  const token = rawToken.replace(/^Bearer\s+/i, "");
 
   const body = await request.json().catch(() => null) as AddressRequest | null;
   if (!body?.street?.trim() || !body.city?.trim() || !body.country?.trim() || !body.pincode?.trim()) {
@@ -18,7 +38,7 @@ export async function POST(request: Request) {
   const response = await fetch(`${backendUrl}/addresses`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${accessToken.replace(/^Bearer\s+/i, "")}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),

@@ -1,14 +1,29 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 export type CartItem = { id: number; name: string; variant: string; price: number; quantity: number; stock: number; image: string };
 type CartProduct = Omit<CartItem, "quantity">;
 const initialItems: CartItem[] = [];
-type CartContextValue = { items: CartItem[]; itemCount: number; addItem: (product: CartProduct, quantity: number) => void; updateQuantity: (id: number, variant: string, amount: number) => void; removeItem: (id: number, variant: string) => void };
+type CartContextValue = { cartId: number | null; items: CartItem[]; itemCount: number; addItem: (product: CartProduct, quantity: number) => void; updateQuantity: (id: number, variant: string, amount: number) => void; removeItem: (id: number, variant: string) => void };
 const CartContext = createContext<CartContextValue | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
+  const [cartId, setCartId] = useState<number | null>(null);
   const [items, setItems] = useState<CartItem[]>(initialItems);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/carts", { method: "POST", signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json().catch(() => null) as { payload?: { cartId?: number }; cartId?: number } | null;
+        if (!response.ok) return;
+        const id = Number(data?.payload?.cartId ?? data?.cartId);
+        if (Number.isInteger(id) && id > 0) setCartId(id);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
+
   const value = useMemo<CartContextValue>(() => ({
+    cartId,
     items,
     itemCount: items.reduce((total, item) => total + item.quantity, 0),
     addItem: (product, quantity) => setItems((current) => {
@@ -22,7 +37,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }),
     updateQuantity: (id, variant, amount) => setItems((current) => current.map((item) => item.id === id && item.variant === variant ? { ...item, quantity: Math.min(item.stock, Math.max(1, item.quantity + amount)) } : item)),
     removeItem: (id, variant) => setItems((current) => current.filter((item) => item.id !== id || item.variant !== variant)),
-  }), [items]);
+  }), [cartId, items]);
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 export function useCart() {

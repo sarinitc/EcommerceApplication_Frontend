@@ -7,7 +7,7 @@ export default function Page() {
       <SiteHeader />
       <div className="mx-auto grid max-w-7xl place-items-center px-5 py-32 text-center sm:px-8 lg:px-10">
         <h1 className="font-display text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">New arrivals</h1>
-        <p className="mt-4 max-w-md text-sm leading-6 text-ink/55">Freshly curated pieces added to the collection — discover what's new.</p>
+        <p className="mt-4 max-w-md text-sm leading-6 text-ink/55">Freshly curated pieces added to the collection — discover what&apos;s new.</p>
       </div>
       <SiteFooter />
     </main>

@@ -1,5 +1,4 @@
 import type { NotificationRequest } from "@/types/notification";
-
 export async function createNotification(data: NotificationRequest) {
   try {
     const response = await fetch("/api/notifications", {

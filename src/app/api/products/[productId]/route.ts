@@ -90,3 +90,40 @@ export async function PUT(request: Request, { params }: { params: Promise<{ prod
 
   return Response.json(data, { status: response.status });
 }
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ productId: string }> }) {
+  if (!backendUrl) return Response.json({ success: false, message: "The product API is not configured." }, { status: 500 });
+  const token = await getAccessToken();
+  if (!token) return Response.json({ success: false, message: "Please sign in to delete products." }, { status: 401 });
+
+  const { productId } = await params;
+  if (!/^[1-9]\d*$/.test(productId)) return Response.json({ success: false, message: "Provide a valid product ID." }, { status: 400 });
+
+  try {
+    const response = await fetch(`${backendUrl}/products/${encodeURIComponent(productId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+      redirect: "error",
+    });
+    if (response.status === 204) return Response.json({ success: true, message: "Product deleted successfully." });
+
+    const data: unknown = await response.json().catch(() => null);
+    const body = data && typeof data === "object" && !Array.isArray(data) ? data as Record<string, unknown> : null;
+    const message = typeof body?.message === "string" && body.message.trim() ? body.message : null;
+    if (!response.ok) {
+      return Response.json({ success: false, message: message ?? `Product API returned ${response.status} ${response.statusText}.` }, { status: response.status });
+    }
+    if (body?.success === false) {
+      const status = typeof body.status === "number" && Number.isInteger(body.status) && body.status >= 400 && body.status <= 599 ? body.status : 400;
+      return Response.json({ success: false, message: message ?? "Unable to delete the product." }, { status });
+    }
+    if (body?.success !== true) {
+      return Response.json({ success: false, message: "The product API returned an invalid deletion response." }, { status: 502 });
+    }
+
+    return Response.json({ success: true, message: message ?? "Product deleted successfully." });
+  } catch {
+    return Response.json({ success: false, message: "The product API could not be reached. Please try again." }, { status: 502 });
+  }
+}

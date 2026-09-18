@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { addToast } from "@heroui/toast";
 import { useCart } from "@/components/features/cart/CartContext";
 import type { Promotion, PromotionListResponse } from "@/types/promotion";
@@ -13,10 +14,24 @@ type Address = {
   icon: "home" | "office";
 };
 
-const addresses: Address[] = [
-  { label: "Home", name: "Jane Doe", lines: ["123 Market Lane, Apt 4B", "San Francisco, CA 94105", "United States"], icon: "home" },
-  { label: "Office", name: "Jane Doe", lines: ["456 Commerce Blvd, Suite 100", "San Francisco, CA 94107", "United States"], icon: "office" },
-];
+type BackendAddress = {
+  addressId?: number | string;
+  street?: string;
+  buildingName?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+};
+
+function mapAddress(address: BackendAddress, index: number): Address {
+  return {
+    label: index === 0 ? "Default" : `Address ${index + 1}`,
+    name: "Delivery address",
+    lines: [address.street, address.buildingName, [address.city, address.state, address.pincode].filter(Boolean).join(", "), address.country].filter((line): line is string => Boolean(line)),
+    icon: index === 0 ? "home" : "office",
+  };
+}
 
 function Icon({ name, className = "" }: { name: "check" | "home" | "lock" | "office" | "package"; className?: string }) {
   const paths = {
@@ -93,19 +108,37 @@ function AddAddressForm({ onCancel, onSave }: { onCancel: () => void; onSave: (a
 
 export default function CheckoutPage() {
   const { items } = useCart();
-  const [checkoutAddresses, setCheckoutAddresses] = useState<Address[]>(addresses);
+  const router = useRouter();
+  const [checkoutAddresses, setCheckoutAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState(0);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
-  const [paymentStep, setPaymentStep] = useState(false);
+  const [paymentStep] = useState(false);
+  const setPaymentStep = (value: boolean) => { void value; router.push("/checkout/payment"); };
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
   const discount = appliedPromotion
     ? Math.min(subtotal, appliedPromotion.discountType === "PERCENTAGE" ? subtotal * (appliedPromotion.discountValue / 100) : appliedPromotion.discountValue)
     : 0;
   const total = subtotal - discount;
   const promoApplied = Boolean(appliedPromotion);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/addresses", { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json().catch(() => null) as { payload?: BackendAddress[] } | BackendAddress[] | null;
+        if (!response.ok) throw new Error(data && !Array.isArray(data) && typeof data === "object" && "message" in data ? String(data.message) : `Address API returned HTTP ${response.status}.`);
+        const payload = Array.isArray(data) ? data : data?.payload;
+        setCheckoutAddresses(Array.isArray(payload) ? payload.map(mapAddress) : []);
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) addToast({ title: "Unable to load addresses", description: cause instanceof Error ? cause.message : "Please try again.", color: "danger", severity: "danger", variant: "solid", timeout: 5000, shouldShowTimeoutProgress: true });
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
 
   function setPromoApplied(value: boolean) {
     if (value) void applyPromotion();

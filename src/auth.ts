@@ -28,6 +28,12 @@ type LoginResponse = AuthPayload & {
   payload?: AuthPayload;
 };
 
+function normalizeRoles(roles: unknown) {
+  return Array.isArray(roles)
+    ? roles.filter((role): role is string => typeof role === "string").map((role) => role.replace(/^ROLE_/i, "").toUpperCase())
+    : [];
+}
+
 export const {
   handlers,
   auth,
@@ -163,7 +169,7 @@ export const {
 
             backendUserId: currentUser?.userId,
 
-            roles: currentUser?.roles ?? [],
+            roles: normalizeRoles(currentUser?.roles),
           };
 
         } catch (error) {
@@ -197,7 +203,7 @@ export const {
           if (!response.ok) return null;
           const result = await response.json() as { payload?: CurrentUserResponse };
           if (!result.payload || result.payload.accountStatus?.toUpperCase() === "BLOCKED") return null;
-          token.roles = result.payload.roles ?? [];
+          token.roles = normalizeRoles(result.payload.roles);
         } catch {
           // Do not grant authenticated access when the account cannot be checked.
           return null;
@@ -222,7 +228,7 @@ export const {
 
       const roles = (user as { roles?: unknown } | undefined)?.roles;
       if (Array.isArray(roles) && roles.every((role) => typeof role === "string")) {
-        token.roles = roles;
+        token.roles = normalizeRoles(roles);
       }
 
       const backendUserId = (user as { backendUserId?: unknown } | undefined)?.backendUserId;

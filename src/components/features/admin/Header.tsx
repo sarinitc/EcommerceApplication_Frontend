@@ -18,7 +18,7 @@ export function Header() {
   const user = session?.user;
   const name = user?.name?.trim() || "Account";
   const pathname = usePathname();
-  const title = pathname.startsWith("/admin/profile") ? "My Profile" : pathname.startsWith("/admin/customers") ? "Customers" : pathname.startsWith("/admin/products") ? "Products" : "Dashboard";
+  const title = pathname.startsWith("/admin/profile") ? "My Profile" : pathname.startsWith("/admin/customers") ? "Customers" : pathname.startsWith("/admin/products") ? "Products" : pathname.startsWith("/admin/orders") ? "Orders" : pathname.startsWith("/admin/categories") ? "Categories" : pathname.startsWith("/admin/addresses") ? "Addresses" : "Dashboard";
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {

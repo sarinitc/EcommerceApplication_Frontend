@@ -12,7 +12,7 @@ const navigation = [
   { label: "Orders", icon: ClipboardList, href: "/admin/orders" },
   { label: "Customers", icon: Users, href: "/admin/customers" },
   { label: "Profile", icon: UserRound, href: "/admin/profile" },
-  { label: "Addresses", icon: MapPin, href: "#addresses" },
+  { label: "Addresses", icon: MapPin, href: "/admin/addresses" },
   { label: "Reviews", icon: Star, href: "#reviews" },
   { label: "Coupons", icon: Tags, href: "#coupons" },
   { label: "Reports", icon: BarChart3, href: "#reports" },
