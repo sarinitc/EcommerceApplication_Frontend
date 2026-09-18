@@ -16,7 +16,7 @@ const navigation = [
   { label: "Reviews", icon: Star, href: "#reviews" },
   { label: "Coupons", icon: Tags, href: "#coupons" },
   { label: "Reports", icon: BarChart3, href: "#reports" },
-  { label: "Settings", icon: Settings, href: "#settings" },
+  { label: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 
 export function Sidebar() {

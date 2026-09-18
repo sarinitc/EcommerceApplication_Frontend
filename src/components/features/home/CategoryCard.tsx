@@ -27,12 +27,17 @@ export type HomeCategory = {
   productCount?: number;
 };
 
-const categoryArtwork: { match: string[]; image: string }[] = [
-  { match: ["electronic", "laptop", "computer", "phone", "smart", "mobile", "tablet", "television", "tv", "monitor", "audio", "headphone", "sound", "tech", "gaming", "camera"], image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80" },
-  { match: ["fashion", "apparel", "clothing", "shirt", "men", "women", "dress", "suit"], image: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=900&q=80" },
-  { match: ["home", "living", "furniture", "sofa", "bed", "lighting", "lamp", "light", "decor", "kitchen", "garden"], image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=80" },
-  { match: ["accessor", "jewel", "watch", "bag", "handbag", "sunglass"], image: "https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&w=900&q=80" },
-  { match: ["shoe", "footwear", "sneaker", "sport", "sports", "fitness", "athletic", "outdoor", "active", "gym", "running"], image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=80" },
+const categoryArtwork: { names: string[]; image: string }[] = [
+  { names: ["accessories"], image: "https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&w=900&q=80" },
+  { names: ["laptops", "computer macbook"], image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80" },
+  { names: ["smartphones"], image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80" },
+  { names: ["electronics"], image: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=900&q=80" },
+  { names: ["televisions"], image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=900&q=80" },
+  { names: ["men fashion"], image: "https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?auto=format&fit=crop&w=900&q=80" },
+  { names: ["women fashion"], image: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=900&q=80" },
+  { names: ["shoes", "sports"], image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80" },
+  { names: ["books"], image: "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=900&q=80" },
+  { names: ["home appliances"], image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=900&q=80" },
 ];
 
 const categoryIcons: { match: string[]; icon: LucideIcon }[] = [
@@ -52,8 +57,8 @@ const categoryIcons: { match: string[]; icon: LucideIcon }[] = [
 const fallbackIcon: LucideIcon = ShoppingBag;
 
 export function categoryImageFor(name: string): string | undefined {
-  const key = name.toLowerCase();
-  return categoryArtwork.find((entry) => entry.match.some((token) => key.includes(token)))?.image;
+  const key = name.trim().toLowerCase();
+  return categoryArtwork.find((entry) => entry.names.includes(key))?.image;
 }
 
 export function categoryIconFor(name: string): ReactElement {
@@ -63,7 +68,7 @@ export function categoryIconFor(name: string): ReactElement {
 }
 
 export function CategoryCard({ category }: { category: HomeCategory }) {
-  const image = category.image?.trim() ? category.image : categoryImageFor(category.categoryName);
+  const image = category.image?.trim() || categoryImageFor(category.categoryName);
   const icon = image ? null : categoryIconFor(category.categoryName);
   const className = image
     ? styles.categoryCard

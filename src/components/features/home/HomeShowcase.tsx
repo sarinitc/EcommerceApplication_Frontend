@@ -8,20 +8,6 @@ import styles from "@/app/page.module.css";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
-const demoCategories: HomeCategory[] = [
-  { categoryId: 1, categoryName: "Electronics", productCount: 128 },
-  { categoryId: 2, categoryName: "Fashion", productCount: 96 },
-  { categoryId: 3, categoryName: "Home & Living", productCount: 74 },
-  { categoryId: 4, categoryName: "Accessories", productCount: 52 },
-];
-
-const demoPicks: Product[] = [
-  { productId: 1, productName: "Studio Sound Speaker", description: "Room-filling sound in a compact, considered form.", price: 149, discount: 0, specialPrice: 0, quantity: 24, image: "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=700&q=85", category: { categoryId: 1, categoryName: "Audio" }, seller: null },
-  { productId: 2, productName: "Orbit Smart Lamp", description: "Warm, adaptive light for slower evenings.", price: 128, discount: 23, specialPrice: 98, quantity: 12, image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=700&q=85", category: { categoryId: 3, categoryName: "Lighting" }, seller: null },
-  { productId: 3, productName: "Slate Mechanical Keyboard", description: "Quiet switches, honest materials.", price: 129, discount: 0, specialPrice: 0, quantity: 30, image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=700&q=85", category: { categoryId: 1, categoryName: "Workspace" }, seller: null },
-  { productId: 4, productName: "Field Camera", description: "Built for the everyday documentarian.", price: 329, discount: 0, specialPrice: 0, quantity: 6, image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=700&q=85", category: { categoryId: 2, categoryName: "Photography" }, seller: null },
-];
-
 function readCategories(data: unknown): HomeCategory[] {
   if (!data || typeof data !== "object") return [];
   const record = data as Record<string, unknown>;
@@ -59,8 +45,8 @@ function Arrow({ className }: { className?: string }) {
 }
 
 export function HomeShowcase() {
-  const [categories, setCategories] = useState<HomeCategory[]>(demoCategories);
-  const [picks, setPicks] = useState<Product[]>(demoPicks);
+  const [categories, setCategories] = useState<HomeCategory[]>([]);
+  const [picks, setPicks] = useState<Product[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,7 +67,8 @@ export function HomeShowcase() {
           if (loaded.length) setPicks(loaded.slice(0, 4));
         }
       } catch {
-        // Keep the curated demo content when the API is unavailable.
+        setCategories([]);
+        setPicks([]);
       }
     }
 
@@ -91,7 +78,7 @@ export function HomeShowcase() {
 
   return (
     <>
-      <section id="collections" className={`${styles.container} ${styles.section}`}>
+      {categories.length > 0 && <section id="collections" className={`${styles.container} ${styles.section}`}>
         <div className={styles.sectionHeader}>
           <h2>Shop by category</h2>
           <div className={styles.sectionMeta}>
@@ -104,9 +91,9 @@ export function HomeShowcase() {
             <CategoryCard key={category.categoryId} category={category} />
           ))}
         </div>
-      </section>
+      </section>}
 
-      <section className={styles.picksSection}>
+      {picks.length > 0 && <section className={styles.picksSection}>
         <div className={`${styles.container} ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <div>
@@ -141,7 +128,7 @@ export function HomeShowcase() {
             })}
           </div>
         </div>
-      </section>
+      </section>}
     </>
   );
 }

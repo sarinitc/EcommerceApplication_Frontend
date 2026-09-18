@@ -17,13 +17,6 @@ const colorOptions = [
   { name: "Cloud", className: "bg-[#e5e7eb]" },
 ];
 
-const related = [
-  { name: "Studio Sound Speaker", price: "$149.00", rating: "4.9", image: "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=700&q=85" },
-  { name: "Orbit Smart Lamp", price: "$98.00", rating: "4.7", image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=700&q=85" },
-  { name: "Slate Mechanical Keyboard", price: "$129.00", rating: "4.8", image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=700&q=85" },
-  { name: "Field Camera", price: "$329.00", rating: "4.8", image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=700&q=85" },
-];
-
 function Icon({ name, className = "" }: { name: "arrow" | "bag" | "check" | "chevron" | "minus" | "plus" | "search" | "star" | "user"; className?: string }) {
   const paths = {
     arrow: <path d="M5 12h14m-6-6 6 6-6 6" />,
@@ -48,6 +41,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const { addItem } = useCart();
   const { id } = use(params);
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
@@ -65,6 +59,17 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         const data = await response.json() as ApiResponse<Product> | { message?: string };
         if (!response.ok || !("payload" in data)) throw new Error(data.message ?? "Unable to load this product.");
         setProduct(data.payload);
+        try {
+          const relatedResponse = await fetch("/api/products?size=12", { signal: controller.signal });
+          const relatedData = await relatedResponse.json() as ApiResponse<{ content: Product[] }> | { message?: string };
+          if (relatedResponse.ok && "payload" in relatedData) {
+            setRelatedProducts(relatedData.payload.content.filter((item) => item.productId !== data.payload.productId).slice(0, 4));
+          } else {
+            setRelatedProducts([]);
+          }
+        } catch {
+          setRelatedProducts([]);
+        }
         setActiveImage(0);
       } catch (error) {
         if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : "Unable to load this product.");
@@ -98,7 +103,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
       <section className="mt-20"><div className="flex gap-7 border-b border-slate-200 text-sm font-semibold text-slate-500"><button className="relative -mb-px border-b-2 border-brand px-1 pb-4 text-brand">Features</button><button className="px-1 pb-4 hover:text-brand">Specifications</button><button className="px-1 pb-4 hover:text-brand" id="reviews">Reviews</button></div><div className="mt-10 grid items-center gap-10 rounded-3xl bg-white p-7 shadow-[0_12px_30px_rgba(23,32,51,.06)] lg:grid-cols-2 lg:p-10"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#5b55d4]">Made for immersion</p><h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.05em]">Immersive sound quality</h2><p className="mt-5 max-w-lg text-sm leading-7 text-slate-600">Every detail is tuned to bring you closer to the music. Our custom acoustic architecture creates an expansive soundstage with warmth, precision, and presence.</p><ul className="mt-6 grid gap-4">{["Adaptive noise cancellation that learns your environment", "40 hours of uninterrupted listening with the charging case", "Comfort-fit memory foam ear cushions for all-day wear"].map((feature) => <li className="flex items-start gap-3 text-sm text-slate-700" key={feature}><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-light text-brand"><Icon name="check" className="h-3.5 w-3.5 fill-none stroke-current stroke-[2.4]" /></span>{feature}</li>)}</ul></div><div className="min-h-[300px] overflow-hidden rounded-2xl bg-slate-100 shadow-[0_12px_25px_rgba(23,32,51,.10)]"><div className="h-full min-h-[300px] bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1484704849700-f032a568e944?auto=format&fit=crop&w=1200&q=85')" }} /></div></div></section>
 
-      <section className="pb-4 pt-20"><div className="flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#5b55d4]">Complete the set</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.055em]">Related Products</h2></div><Link className="hidden items-center gap-1 text-sm font-bold text-brand hover:text-brand-deep sm:inline-flex" href="/products">View all <Icon name="arrow" className="h-4 w-4 fill-none stroke-current stroke-2" /></Link></div><div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{related.map((item, index) => <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_8px_22px_rgba(23,32,51,.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_30px_rgba(23,32,51,.12)]" key={item.name}><Link href={`/products/${index + 2}`} className="block aspect-[1/0.85] overflow-hidden rounded-xl bg-slate-100"><span className="block h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-110" style={{ backgroundImage: `url(${item.image})` }} /></Link><div className="px-1 pb-1 pt-4"><div className="flex items-center gap-1.5"><Stars rating={item.rating} /><span className="text-[11px] text-slate-500">{item.rating}</span></div><h3 className="mt-2 font-display text-lg font-semibold tracking-[-.03em]"><Link className="hover:text-brand" href={`/products/${index + 2}`}>{item.name}</Link></h3><p className="mt-2 text-sm font-bold text-brand-deep">{item.price}</p></div></article>)}</div></section>
+      {relatedProducts.length > 0 && <section className="pb-4 pt-20"><div className="flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#5b55d4]">Complete the set</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.055em]">Related Products</h2></div><Link className="hidden items-center gap-1 text-sm font-bold text-brand hover:text-brand-deep sm:inline-flex" href="/products">View all <Icon name="arrow" className="h-4 w-4 fill-none stroke-current stroke-2" /></Link></div><div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{relatedProducts.map((item) => { const itemPrice = item.specialPrice || item.price; return <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_8px_22px_rgba(23,32,51,.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_30px_rgba(23,32,51,.12)]" key={item.productId}><Link href={`/products/${item.productId}`} className="block aspect-[1/0.85] overflow-hidden rounded-xl bg-slate-100"><span className="block h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-110" style={{ backgroundImage: `url(${item.image})` }} /></Link><div className="px-1 pb-1 pt-4"><div className="flex items-center gap-1.5"><Stars rating="New" /><span className="text-[11px] text-slate-500">New</span></div><h3 className="mt-2 font-display text-lg font-semibold tracking-[-.03em]"><Link className="hover:text-brand" href={`/products/${item.productId}`}>{item.productName}</Link></h3><p className="mt-2 text-sm font-bold text-brand-deep">{currency.format(itemPrice)}</p></div></article>; })}</div></section>}
     </div>
     <SiteFooter />
   </main>;
