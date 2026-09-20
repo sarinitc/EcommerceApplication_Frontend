@@ -1,8 +1,9 @@
 "use client";
 
 import { addToast } from "@heroui/toast";
-import { Bell, CheckCircle2, Globe, Save, Store } from "lucide-react";
+import { ArrowLeft, Bell, CalendarDays, CheckCircle2, Globe, Plus, RefreshCw, Search, Save, Store, Tag, TicketPercent } from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import type { Promotion, PromotionListResponse } from "@/types/promotion";
 
 type AdminSettings = {
   storeName: string;
@@ -120,6 +121,177 @@ function SettingCard({ icon: Icon, title, description, onSave, saving, children 
   );
 }
 
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "No date" : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
+}
+
+function promotionStatus(promotion: Promotion) {
+  const now = Date.now();
+  const starts = new Date(promotion.startDate).getTime();
+  const ends = new Date(promotion.endDate).getTime();
+  if (!promotion.active || ends < now) return { label: "Expired", className: "bg-slate-100 text-slate-500" };
+  if (starts > now) return { label: "Scheduled", className: "bg-amber-50 text-amber-700" };
+  if (promotion.usageLimit && (promotion.usedCount ?? 0) >= promotion.usageLimit) return { label: "Limit reached", className: "bg-rose-50 text-rose-600" };
+  return { label: "Active", className: "bg-emerald-50 text-emerald-700" };
+}
+
+function promotionValue(promotion: Promotion) {
+  return promotion.discountType === "PERCENTAGE" ? `${promotion.discountValue}% off` : `$${promotion.discountValue.toFixed(2)} off`;
+}
+
+export function CouponsSection({ standalone = false }: { standalone?: boolean }) {
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ code: "", discountType: "PERCENTAGE", discountValue: "", minimumOrderAmount: "", startDate: "", endDate: "", usageLimit: "" });
+
+  async function loadPromotions() {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/promotions", { cache: "no-store" });
+      const data = await response.json().catch(() => null) as PromotionListResponse | null;
+      if (!response.ok) throw new Error(data?.message ?? "Unable to load coupons.");
+      setPromotions(data?.payload ?? data?.data ?? []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to load coupons.");
+      setPromotions([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    async function load() {
+      await loadPromotions();
+    }
+    void load();
+  }, []);
+
+  const filteredPromotions = promotions.filter((promotion) => promotion.code.toLowerCase().includes(query.trim().toLowerCase()));
+  const activeCount = promotions.filter((promotion) => promotionStatus(promotion).label === "Active").length;
+  const scheduledCount = promotions.filter((promotion) => promotionStatus(promotion).label === "Scheduled").length;
+
+  async function createPromotion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCreating(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/promotions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: form.code.trim().toUpperCase(),
+          discountType: form.discountType,
+          discountValue: Number(form.discountValue),
+          minimumOrderAmount: form.minimumOrderAmount ? Number(form.minimumOrderAmount) : 0,
+          startDate: form.startDate,
+          endDate: form.endDate,
+          usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
+          active: true,
+        }),
+      });
+      const data = await response.json().catch(() => null) as { message?: string } | null;
+      if (!response.ok) throw new Error(data?.message ?? "The backend could not create this coupon.");
+      setForm({ code: "", discountType: "PERCENTAGE", discountValue: "", minimumOrderAmount: "", startDate: "", endDate: "", usageLimit: "" });
+      setShowCreateForm(false);
+      await loadPromotions();
+      addToast({ title: "Coupon created", description: "The coupon was saved to the promotion database.", color: "success", severity: "success", variant: "solid" });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The backend could not create this coupon.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <section id={standalone ? "coupons" : undefined} className="scroll-mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><TicketPercent className="h-5 w-5" /></span>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-500">Promotions</p>
+              <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">Coupons</h2>
+              <p className="mt-1 text-sm text-slate-500">View the discount codes currently available in your store.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <a href="/admin/settings" className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600">
+              <ArrowLeft className="h-4 w-4" /> Back to settings
+            </a>
+            <button type="button" onClick={() => setShowCreateForm((visible) => !visible)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+              <Plus className="h-4 w-4" /> Create coupon
+            </button>
+          </div>
+        </div>
+
+        {showCreateForm && (
+          <form onSubmit={createPromotion} className="mt-6 rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 sm:p-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="sm:col-span-2"><span className="mb-1 block text-xs font-semibold text-slate-600">Coupon code *</span><input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} placeholder="WELCOME10" className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm uppercase outline-none focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100" /></label>
+              <label><span className="mb-1 block text-xs font-semibold text-slate-600">Discount type *</span><select value={form.discountType} onChange={(event) => setForm({ ...form, discountType: event.target.value })} className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100"><option value="PERCENTAGE">Percentage</option><option value="FIXED_AMOUNT">Fixed amount</option></select></label>
+              <label><span className="mb-1 block text-xs font-semibold text-slate-600">Discount value *</span><input required min="0.01" type="number" step="0.01" value={form.discountValue} onChange={(event) => setForm({ ...form, discountValue: event.target.value })} placeholder="10" className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100" /></label>
+              <label><span className="mb-1 block text-xs font-semibold text-slate-600">Starts *</span><input required type="datetime-local" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100" /></label>
+              <label><span className="mb-1 block text-xs font-semibold text-slate-600">Ends *</span><input required type="datetime-local" value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100" /></label>
+              <label><span className="mb-1 block text-xs font-semibold text-slate-600">Minimum order</span><input min="0" type="number" step="0.01" value={form.minimumOrderAmount} onChange={(event) => setForm({ ...form, minimumOrderAmount: event.target.value })} placeholder="0" className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100" /></label>
+              <label><span className="mb-1 block text-xs font-semibold text-slate-600">Usage limit</span><input min="1" type="number" value={form.usageLimit} onChange={(event) => setForm({ ...form, usageLimit: event.target.value })} placeholder="Unlimited" className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100" /></label>
+            </div>
+            <div className="mt-4 flex justify-end gap-2"><button type="button" onClick={() => setShowCreateForm(false)} className="h-10 rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-white">Cancel</button><button type="submit" disabled={creating} className="h-10 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">{creating ? "Saving…" : "Save coupon"}</button></div>
+          </form>
+        )}
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl bg-slate-50 px-4 py-3"><p className="text-xs font-medium text-slate-500">Total coupons</p><p className="mt-1 text-2xl font-bold text-slate-900">{promotions.length}</p></div>
+          <div className="rounded-xl bg-emerald-50/70 px-4 py-3"><p className="text-xs font-medium text-emerald-700">Active now</p><p className="mt-1 text-2xl font-bold text-emerald-800">{activeCount}</p></div>
+          <div className="rounded-xl bg-amber-50/80 px-4 py-3"><p className="text-xs font-medium text-amber-700">Scheduled</p><p className="mt-1 text-2xl font-bold text-amber-800">{scheduledCount}</p></div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <label className="relative block sm:max-w-xs sm:flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search coupon code" className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-3 focus:ring-indigo-100" />
+        </label>
+        <button type="button" onClick={() => void loadPromotions()} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600">
+          <RefreshCw className="h-4 w-4" /> Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3 p-5 sm:p-6">{[1, 2, 3].map((item) => <div key={item} className="h-16 animate-pulse rounded-xl bg-slate-100" />)}</div>
+      ) : error ? (
+        <div className="px-5 py-12 text-center sm:px-6"><p className="font-semibold text-slate-800">Could not load coupons</p><p className="mt-1 text-sm text-slate-500">{error}</p><button type="button" onClick={() => void loadPromotions()} className="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-700">Try again</button></div>
+      ) : filteredPromotions.length === 0 ? (
+        <div className="px-5 py-14 text-center sm:px-6">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-indigo-50 text-indigo-500"><Tag className="h-6 w-6" /></span>
+          <h3 className="mt-4 text-base font-bold text-slate-900">{promotions.length === 0 ? "No coupons yet" : "No matching coupons"}</h3>
+          <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">{promotions.length === 0 ? "Coupons created in your promotion system will appear here automatically." : "Try a different search term to find another coupon."}</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-100">
+          {filteredPromotions.map((promotion) => {
+            const status = promotionStatus(promotion);
+            const used = promotion.usedCount ?? 0;
+            const limit = promotion.usageLimit;
+            return <div key={promotion.promotionId} className="flex flex-col gap-4 px-5 py-4 transition hover:bg-slate-50/70 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><Tag className="h-4 w-4" /></span>
+                <div className="min-w-0"><p className="truncate font-bold tracking-wide text-slate-800">{promotion.code}</p><p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500"><CalendarDays className="h-3.5 w-3.5" />{formatDate(promotion.startDate)} – {formatDate(promotion.endDate)}</p></div>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm sm:justify-end"><span className="font-bold text-indigo-600">{promotionValue(promotion)}</span><span className="text-slate-500">{limit ? `${used}/${limit} used` : `${used} used`}</span><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status.className}`}>{status.label}</span></div>
+            </div>;
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function AdminSettingsPage() {
   const [settings, setSettings] = useState<AdminSettings>(defaults);
   const [loading, setLoading] = useState(true);
@@ -207,7 +379,7 @@ export function AdminSettingsPage() {
   }
 
   return (
-    <main className="min-h-screen space-y-6 bg-[#f8f9fc] p-5 sm:p-6">
+    <main id="settings" className="min-h-screen space-y-6 bg-[#f8f9fc] p-5 sm:p-6">
       <header>
         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-indigo-500">Store configuration</p>
         <h1 className="mt-1.5 text-3xl font-bold tracking-tight text-slate-900">Settings</h1>

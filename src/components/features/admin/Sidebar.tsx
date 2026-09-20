@@ -14,7 +14,7 @@ const navigation = [
   { label: "Profile", icon: UserRound, href: "/admin/profile" },
   { label: "Addresses", icon: MapPin, href: "/admin/addresses" },
   { label: "Reviews", icon: Star, href: "#reviews" },
-  { label: "Coupons", icon: Tags, href: "#coupons" },
+  { label: "Coupons", icon: Tags, href: "/admin/coupons" },
   { label: "Reports", icon: BarChart3, href: "#reports" },
   { label: "Settings", icon: Settings, href: "/admin/settings" },
 ];

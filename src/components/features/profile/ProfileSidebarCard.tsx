@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { BarChart3, ChevronRight, CreditCard, Crown, LogOut, MapPin, Package, ShieldCheck, ShoppingBag, UserRound } from "lucide-react";
+import { ChevronRight, CreditCard, Crown, LogOut, MapPin, Package, ShieldCheck, ShoppingBag, UserRound } from "lucide-react";
 import { AvatarUpload } from "./AvatarUpload";
 
 export function ProfileSidebarCard({ name, email, image, onPersonalInfo, onLogout, onAvatarChange, onAddresses }: { name: string; email: string; image?: string | null; onPersonalInfo: () => void; onLogout: () => void; onAddresses: () => void; onAvatarChange: (url: string | null) => void | Promise<void> }) {
@@ -18,7 +18,7 @@ export function ProfileSidebarCard({ name, email, image, onPersonalInfo, onLogou
         <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#f5f5fd] px-2 py-1 text-[10px] text-[#626b96]"><Crown size={13} className="shrink-0 fill-amber-400 text-amber-500" />Member since January 2024 <span className="sr-only">(demo date)</span></p>
       </div>
     </div>
-    <nav aria-label="Account navigation" className="my-4 space-y-1.5"><Link href="/dashboard" className={row}><BarChart3 size={23} className={icon} /><span className="flex-1">Dashboard</span><ChevronRight size={18} className="text-[#959dc1]" /></Link><button onClick={onPersonalInfo} className={`${row} bg-gradient-to-r from-indigo-50 to-[#f5f2ff] text-[#5945ff]`}><UserRound size={23} className="shrink-0 fill-indigo-100 text-[#6366f1]" /><span className="flex-1">Personal Information</span><ChevronRight size={18} className="text-[#6366f1]" /></button><Link href="/account/orders" className={row}><Package size={23} className={icon} /><span className="flex-1">My Orders</span><ChevronRight size={18} className="text-[#959dc1]" /></Link>
+    <nav aria-label="Account navigation" className="my-4 space-y-1.5"><button onClick={onPersonalInfo} className={`${row} bg-gradient-to-r from-indigo-50 to-[#f5f2ff] text-[#5945ff]`}><UserRound size={23} className="shrink-0 fill-indigo-100 text-[#6366f1]" /><span className="flex-1">Personal Information</span><ChevronRight size={18} className="text-[#6366f1]" /></button><Link href="/account/orders" className={row}><Package size={23} className={icon} /><span className="flex-1">My Orders</span><ChevronRight size={18} className="text-[#959dc1]" /></Link>
       <button onClick={onAddresses} className={row}><MapPin size={23} className={icon} /><span className="flex-1">Addresses</span><ChevronRight size={18} className="text-[#959dc1]" /></button>
       <button disabled className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl p-4 text-left text-sm font-semibold text-gray-600 opacity-60"><CreditCard size={20} className={icon} /><span className="flex-1">Payment Methods</span><span className="rounded-md bg-gray-100 px-2 py-1 text-[10px]">Soon</span></button>
       <a href="#account-security" className={row}><ShieldCheck size={23} className={icon} /><span className="flex-1">Security</span><ChevronRight size={18} className="text-[#959dc1]" /></a>
