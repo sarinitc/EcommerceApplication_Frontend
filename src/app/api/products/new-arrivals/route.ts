@@ -1,24 +1,8 @@
+import { resolveProductImageUrl } from "@/lib/image-urls";
 import { auth } from "@/auth";
 import type { ApiResponse, Product, ProductPage } from "@/types/product";
 
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
-
-function resolveImageUrl(image: string) {
-  if (!image || image.startsWith("data:")) return image;
-
-  const productImagePath = "/uploads/products/";
-  const backendOrigin = new URL(backendUrl!).origin;
-  const url = new URL(image, `${backendOrigin}/`);
-  if (/^https?:\/\//i.test(image) && url.origin !== backendOrigin) return image;
-  const imagePathIndex = url.pathname.indexOf(productImagePath);
-  const fileName = imagePathIndex >= 0
-    ? url.pathname.slice(imagePathIndex + productImagePath.length)
-    : image;
-
-  if (!fileName.includes("/")) return `/api/product-images/${encodeURIComponent(fileName)}`;
-
-  return url.toString();
-}
 
 export async function GET(request: Request) {
   if (!backendUrl) {
@@ -57,7 +41,7 @@ export async function GET(request: Request) {
       ...data.payload,
       content: data.payload.content.map((product: Product) => ({
         ...product,
-        image: resolveImageUrl(product.image),
+        image: resolveProductImageUrl(product.image, backendUrl),
       })),
     },
   });

@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
+const createLoader = require("./helpers/load-ts.cjs");
 
 const routePath = path.join(__dirname, "..", "src", "app", "api", "products", "[productId]", "route.ts");
 
@@ -16,7 +17,9 @@ function loadRoute({
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   const loadedModule = { exports: {} };
-  const localRequire = (specifier) => specifier === "@/auth" ? { auth: async () => session } : require(specifier);
+  const load = createLoader();
+  const localRequire = (specifier) => specifier === "@/auth" ? { auth: async () => session }
+    : specifier === "@/lib/image-urls" ? load("src/lib/image-urls.ts") : require(specifier);
   new Function("exports", "require", "module", "fetch", "process", "Request", "Response", compiled)(
     loadedModule.exports, localRequire, loadedModule, fetchImpl,
     { env: { API_URL: apiUrl } }, Request, Response,

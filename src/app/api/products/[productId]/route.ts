@@ -1,21 +1,9 @@
+import { resolveProductImageUrl } from "@/lib/image-urls";
 import { auth } from "@/auth";
 import type { Session } from "next-auth";
 import type { ApiResponse, Product, ProductRequest } from "@/types/product";
 
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
-
-function resolveImageUrl(image: string) {
-  if (!image || image.startsWith("data:")) return image;
-
-  const productImagePath = "/uploads/products/";
-  const backendOrigin = new URL(backendUrl!).origin;
-  const url = new URL(image, `${backendOrigin}/`);
-  if (/^https?:\/\//i.test(image) && url.origin !== backendOrigin) return image;
-  const imagePathIndex = url.pathname.indexOf(productImagePath);
-  const fileName = imagePathIndex >= 0 ? url.pathname.slice(imagePathIndex + productImagePath.length) : image;
-
-  return !fileName.includes("/") ? `/api/product-images/${encodeURIComponent(fileName)}` : url.toString();
-}
 
 function restoreBackendImageUrl(image: string) {
   const proxyPath = "/api/product-images/";
@@ -62,7 +50,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
     ...data,
     payload: {
       ...data.payload,
-      image: resolveImageUrl(data.payload.image),
+      image: resolveProductImageUrl(data.payload.image, backendUrl),
     },
   });
 }

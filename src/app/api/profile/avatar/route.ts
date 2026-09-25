@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { normalizeProfileImageResponse } from "@/lib/image-urls";
 
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
 const avatarPath = process.env.AVATAR_API_PATH ?? "/profile/image";
@@ -27,7 +28,7 @@ async function proxyAvatarRequest(request: Request) {
     if (data === null) {
       return Response.json({ message: response.ok ? "The profile API did not return the uploaded photo." : `Photo upload failed (${response.status}).` }, { status: response.ok ? 502 : response.status });
     }
-    return Response.json(data, { status: response.status });
+    return Response.json(response.ok ? normalizeProfileImageResponse(data, backendUrl) : data, { status: response.status });
   } catch {
     return Response.json({ message: "The profile API could not be reached. Please try again." }, { status: 502 });
   }

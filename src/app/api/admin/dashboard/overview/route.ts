@@ -1,20 +1,8 @@
+import { resolveProductImageUrl } from "@/lib/image-urls";
 import { auth } from "@/auth";
 import type { DashboardOverview, TopProduct } from "@/types/dashboard";
 
 const backendUrl = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)?.replace(/\/$/, "");
-
-function resolveImageUrl(image: string) {
-  if (!image || image.startsWith("data:")) return image;
-
-  const productImagePath = "/uploads/products/";
-  const backendOrigin = new URL(backendUrl!).origin;
-  const url = new URL(image, `${backendOrigin}/`);
-  if (/^https?:\/\//i.test(image) && url.origin !== backendOrigin) return image;
-  const imagePathIndex = url.pathname.indexOf(productImagePath);
-  const fileName = imagePathIndex >= 0 ? url.pathname.slice(imagePathIndex + productImagePath.length) : image;
-
-  return !fileName.includes("/") ? `/api/product-images/${encodeURIComponent(fileName)}` : url.toString();
-}
 
 export async function GET(request: Request) {
   if (!backendUrl) return Response.json({ message: "The dashboard API is not configured." }, { status: 500 });
@@ -44,7 +32,7 @@ export async function GET(request: Request) {
     ...data,
     payload: {
       ...data.payload,
-      topProducts: data.payload.topProducts.map((product: TopProduct) => ({ ...product, image: resolveImageUrl(product.image) })),
+      topProducts: data.payload.topProducts.map((product: TopProduct) => ({ ...product, image: resolveProductImageUrl(product.image, backendUrl) })),
     },
   });
 }

@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
+import { resolveProfileImageUrl } from "@/lib/image-urls";
 
 type AuthPayload = {
   accessToken?: string;
@@ -241,7 +242,10 @@ export const {
 
     session({ session, token }) {
 
-      if (typeof token.picture === "string") session.user.image = token.picture;
+      if (typeof token.picture === "string") {
+        const apiUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081/api/v1";
+        session.user.image = resolveProfileImageUrl(token.picture, apiUrl);
+      }
       if (token.picture === undefined) session.user.image = null;
 
       if (
