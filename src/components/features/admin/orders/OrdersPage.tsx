@@ -79,6 +79,25 @@ async function fetchOrders(signal: AbortSignal): Promise<Order[]> {
   return Array.isArray(payload) ? payload.map(mapOrder) : [];
 }
 
+async function requestOrderStatus(orderId: number, orderStatus: OrderStatusKey) {
+  const response = await fetch(`/api/orders/${orderId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderStatus }),
+    cache: "no-store",
+  });
+  const data = await response.json().catch(() => null) as { message?: string } | null;
+  if (!response.ok) throw new Error(data?.message ?? `Failed to update order ${orderLabel(orderId)}.`);
+  return data;
+}
+
+async function requestDeleteOrder(orderId: number) {
+  const response = await fetch(`/api/orders/${orderId}`, { method: "DELETE", cache: "no-store" });
+  const data = await response.json().catch(() => null) as { message?: string } | null;
+  if (!response.ok) throw new Error(data?.message ?? `Failed to delete order ${orderLabel(orderId)}.`);
+  return data;
+}
+
 export function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,28 +178,51 @@ export function OrdersPage() {
     setViewOrder((current) => current?.orderId === orderId ? { ...current, ...patch } : current);
     toast(message);
   }
-  const bulkBusyWrapper = (process: () => void) => { setBulkBusy(true); window.setTimeout(() => { process(); setBulkBusy(false); }, 350); };
-  const busyOrderWrapper = (orderId: number, process: () => void) => { setBusyId(orderId); window.setTimeout(() => { process(); setBusyId(null); }, 350); };
 
-  function handleUpdateStatus(orderId: number, status: OrderStatusKey) {
-    busyOrderWrapper(orderId, () => updateOrder(orderId, { status }, `Order ${orderLabel(orderId)} marked as ${status.toLowerCase()}.`));
+  async function handleUpdateStatus(orderId: number, status: OrderStatusKey) {
+    if (busyId) return;
+    setBusyId(orderId);
+    try {
+      await requestOrderStatus(orderId, status);
+      updateOrder(orderId, { status }, `Order ${orderLabel(orderId)} marked as ${status.toLowerCase()}.`);
+    } catch (error) {
+      toast("Status update failed.", error instanceof Error ? error.message : `Order ${orderLabel(orderId)} status could not be updated.`, "danger");
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  function handleBulkStatus(status: OrderStatusKey) {
+  async function handleBulkStatus(status: OrderStatusKey) {
     const ids = [...selected];
-    bulkBusyWrapper(() => {
+    if (!ids.length) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all(ids.map((id) => requestOrderStatus(id, status)));
       setOrders((current) => current.map((order) => ids.includes(order.orderId) ? { ...order, status } : order));
       setSelected(new Set());
       toast(`${ids.length} orders marked as ${status.toLowerCase()}.`);
-    });
+    } catch (error) {
+      toast("Bulk update failed.", error instanceof Error ? error.message : "The selected orders could not be updated.", "danger");
+    } finally {
+      setBulkBusy(false);
+    }
   }
 
-  function handleCancel(order: Order) {
-    updateOrder(
-      order.orderId,
-      { status: "CANCELLED", payment: "REFUNDED" as PaymentStatusKey },
-      `Order ${orderLabel(order.orderId)} cancelled and payment refunded.`,
-    );
+  async function handleCancel(order: Order) {
+    if (busyId) return;
+    setBusyId(order.orderId);
+    try {
+      await requestOrderStatus(order.orderId, "CANCELLED");
+      updateOrder(
+        order.orderId,
+        { status: "CANCELLED", payment: "REFUNDED" as PaymentStatusKey },
+        `Order ${orderLabel(order.orderId)} cancelled and payment refunded.`,
+      );
+    } catch (error) {
+      toast("Cancel failed.", error instanceof Error ? error.message : `Order ${orderLabel(order.orderId)} could not be cancelled.`, "danger");
+    } finally {
+      setBusyId(null);
+    }
   }
 
   function handlePrint() {
@@ -229,13 +271,22 @@ export function OrdersPage() {
     }, 350);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteTarget) return;
     const { id } = deleteTarget;
-    setOrders((current) => current.filter((order) => order.orderId !== id));
-    setSelected((current) => { const next = new Set(current); next.delete(id); return next; });
-    setDeleteTarget(null);
-    toast("Order deleted.", `Order ${orderLabel(id)} was removed.`, "danger");
+    setBulkBusy(true);
+    try {
+      await requestDeleteOrder(id);
+      setOrders((current) => current.filter((order) => order.orderId !== id));
+      setSelected((current) => { const next = new Set(current); next.delete(id); return next; });
+      setDeleteTarget(null);
+      toast("Order deleted.", `Order ${orderLabel(id)} was removed.`, "danger");
+    } catch (error) {
+      setDeleteTarget(null);
+      toast("Delete failed.", error instanceof Error ? error.message : `Order ${orderLabel(id)} could not be deleted.`, "danger");
+    } finally {
+      setBulkBusy(false);
+    }
   }
 
   function handleBulkDelete() {
@@ -243,12 +294,21 @@ export function OrdersPage() {
     setDeleteTarget({ id: -1, label: `${selected.size} orders`, count: selected.size });
   }
 
-  function confirmBulkDelete() {
+  async function confirmBulkDelete() {
     const ids = [...selected];
-    setOrders((current) => current.filter((order) => !ids.includes(order.orderId)));
-    setSelected(new Set());
-    setDeleteTarget(null);
-    toast(`${ids.length} orders deleted.`, undefined, "danger");
+    setBulkBusy(true);
+    try {
+      await Promise.all(ids.map((id) => requestDeleteOrder(id)));
+      setOrders((current) => current.filter((order) => !ids.includes(order.orderId)));
+      setSelected(new Set());
+      setDeleteTarget(null);
+      toast(`${ids.length} orders deleted.`, undefined, "danger");
+    } catch (error) {
+      setDeleteTarget(null);
+      toast("Bulk delete failed.", error instanceof Error ? error.message : "The selected orders could not be deleted.", "danger");
+    } finally {
+      setBulkBusy(false);
+    }
   }
 
   return (

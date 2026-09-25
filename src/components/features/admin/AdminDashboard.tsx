@@ -13,10 +13,72 @@ import type { DashboardOverview, OrderStatus, RecentOrder, SalesOverview, TopPro
 
 type DashboardResponse = { payload: DashboardOverview; message?: string };
 
-const demoSales: SalesOverview[] = [{ date: "01 May", orders: 18, revenue: 2200 }, { date: "04 May", orders: 25, revenue: 2800 }, { date: "07 May", orders: 19, revenue: 2400 }, { date: "10 May", orders: 31, revenue: 3400 }, { date: "13 May", orders: 27, revenue: 3100 }, { date: "16 May", orders: 38, revenue: 4100 }, { date: "19 May", orders: 32, revenue: 3600 }, { date: "22 May", orders: 42, revenue: 4500 }, { date: "26 May", orders: 36, revenue: 4000 }, { date: "30 May", orders: 48, revenue: 4900 }];
-const demoStatuses: OrderStatus[] = [{ status: "PENDING", count: 16 }, { status: "PROCESSING", count: 64 }, { status: "SHIPPED", count: 120 }, { status: "DELIVERED", count: 32 }, { status: "CANCELLED", count: 8 }];
-const demoOrders: RecentOrder[] = [{ orderId: 2451, customerName: "John Doe", email: "john@example.com", orderDate: "2026-05-30", total: 120, status: "PENDING" }, { orderId: 2450, customerName: "Jane Smith", email: "jane@example.com", orderDate: "2026-05-30", total: 75.5, status: "PROCESSING" }, { orderId: 2449, customerName: "Robert Johnson", email: "robert@example.com", orderDate: "2026-05-29", total: 210, status: "SHIPPED" }, { orderId: 2448, customerName: "Emily Davis", email: "emily@example.com", orderDate: "2026-05-29", total: 65, status: "DELIVERED" }];
-const demoTopProducts: TopProduct[] = [{ productId: 1, productName: "Wireless Headphones", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=100&q=80", unitsSold: 125 }, { productId: 2, productName: "Smart Watch", image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=100&q=80", unitsSold: 98 }, { productId: 3, productName: "Running Shoes", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=100&q=80", unitsSold: 76 }, { productId: 4, productName: "Backpack", image: "https://images.unsplash.com/photo-1553062407-2?auto=format&fit=crop&w=100&q=80", unitsSold: 56 }];
+type BackendOrder = {
+  orderId?: number;
+  email?: string;
+  orderDate?: string;
+  orderStatus?: string;
+  totalAmount?: number;
+  items?: Array<{ quantity?: number; orderedProductPrice?: number; product?: { productName?: string; productId?: number; image?: string } | null }>;
+};
+
+const VALID_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
+
+function statusOf(value: string | undefined): string {
+  return VALID_STATUSES.includes(value ?? "") ? (value as string) : "PENDING";
+}
+
+function buildStatuses(orders: BackendOrder[]): OrderStatus[] {
+  const counts: Record<string, number> = { PENDING: 0, PROCESSING: 0, SHIPPED: 0, DELIVERED: 0, CANCELLED: 0 };
+  orders.forEach((order) => {
+    counts[statusOf(order.orderStatus)] += 1;
+  });
+  return VALID_STATUSES.map((status) => ({ status, count: counts[status] })).filter((entry) => entry.count > 0);
+}
+
+function buildRecentOrders(orders: BackendOrder[]): RecentOrder[] {
+  return [...orders]
+    .sort((first, second) => new Date(second.orderDate ?? 0).getTime() - new Date(first.orderDate ?? 0).getTime())
+    .slice(0, 6)
+    .map((order) => ({
+      orderId: order.orderId ?? 0,
+      customerName: order.email ?? "Customer",
+      email: order.email ?? "",
+      orderDate: (order.orderDate ?? "").split("T")[0],
+      total: order.totalAmount ?? 0,
+      status: statusOf(order.orderStatus),
+    }));
+}
+
+function buildSales(orders: BackendOrder[]): SalesOverview[] {
+  const byDate = new Map<string, { orders: number; revenue: number }>();
+  orders.forEach((order) => {
+    const raw = (order.orderDate ?? "").split("T")[0].slice(0, 10);
+    if (!raw) return;
+    const entry = byDate.get(raw) ?? { orders: 0, revenue: 0 };
+    entry.orders += 1;
+    entry.revenue += order.totalAmount ?? 0;
+    byDate.set(raw, entry);
+  });
+  return [...byDate.entries()]
+    .sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
+    .map(([date, value]) => ({ date, orders: value.orders, revenue: Math.round(value.revenue * 100) / 100 }));
+}
+
+function buildTopProducts(orders: BackendOrder[]): TopProduct[] {
+  const byProduct = new Map<number, TopProduct>();
+  orders.forEach((order) => {
+    (order.items ?? []).forEach((item) => {
+      const product = item.product;
+      if (!product) return;
+      const id = product.productId ?? 0;
+      const entry = byProduct.get(id) ?? { productId: id, productName: product.productName ?? "Unknown product", image: product.image ?? "", unitsSold: 0 };
+      entry.unitsSold += item.quantity ?? 0;
+      byProduct.set(id, entry);
+    });
+  });
+  return [...byProduct.values()].sort((first, second) => second.unitsSold - first.unitsSold).slice(0, 5);
+}
 
 export function AdminDashboard() {
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
@@ -25,20 +87,43 @@ export function AdminDashboard() {
   useEffect(() => {
     const controller = new AbortController();
 
-    async function loadOverview() {
+    async function loadDashboard() {
       try {
-        const response = await fetch("/api/admin/dashboard/overview", { signal: controller.signal });
-        const data = await response.json() as DashboardResponse | { message?: string };
-        if (!response.ok || !("payload" in data)) throw new Error(data.message ?? "Unable to load dashboard data.");
-        setOverview(data.payload);
+        const [overviewResponse, ordersResponse] = await Promise.all([
+          fetch("/api/admin/dashboard/overview", { signal: controller.signal }),
+          fetch("/api/orders", { signal: controller.signal }),
+        ]);
+        const overviewData = await overviewResponse.json().catch(() => null) as DashboardResponse | { message?: string } | null;
+        if (!overviewResponse.ok || !overviewData || !("payload" in overviewData)) {
+          throw new Error(overviewData && "message" in overviewData && overviewData.message ? overviewData.message : "Unable to load dashboard data.");
+        }
+        const ordersPayload = await ordersResponse.json().catch(() => null) as { payload?: BackendOrder[]; message?: string } | BackendOrder[] | null;
+        if (!ordersResponse.ok || ordersPayload === null) {
+          throw new Error(ordersPayload && !Array.isArray(ordersPayload) && ordersPayload.message ? ordersPayload.message : "Unable to load orders for the dashboard.");
+        }
+        const orders = Array.isArray(ordersPayload) ? ordersPayload : ordersPayload.payload ?? [];
+
+        const payload = overviewData.payload;
+        const pendingCount = orders.filter((order) => order.orderStatus === "PENDING").length;
+        setOverview({
+          summary: {
+            ...payload.summary,
+            totalOrders: orders.length || payload.summary.totalOrders,
+            pendingOrders: pendingCount || payload.summary.pendingOrders,
+          },
+          sales: payload.sales.length ? payload.sales : buildSales(orders),
+          ordersByStatus: payload.ordersByStatus.length ? payload.ordersByStatus : buildStatuses(orders),
+          recentOrders: payload.recentOrders.length ? payload.recentOrders : buildRecentOrders(orders),
+          topProducts: payload.topProducts.length ? payload.topProducts : buildTopProducts(orders),
+        });
       } catch (loadError) {
         if (!controller.signal.aborted) setError(loadError instanceof Error ? loadError.message : "Unable to load dashboard data.");
       }
     }
 
-    void loadOverview();
+    void loadDashboard();
     return () => controller.abort();
   }, []);
 
-  return <div className="flex min-w-295 bg-[#f8f9fb] font-sans"><Sidebar /><div className="min-h-screen flex-1"><Header /><main className="space-y-6 p-6">{error && <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{error}</p>}{!overview && !error ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div className="h-32 animate-pulse rounded-xl border border-gray-100 bg-white/80" key={index} />)}</div> : overview && <><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard icon={ShoppingBag} iconBg="bg-indigo-50 text-indigo-600" label="Total Products" value={String(overview.summary.totalProducts)} /><StatCard icon={Users} iconBg="bg-emerald-50 text-emerald-600" label="Total Customers" value={String(overview.summary.totalCustomers)} /><StatCard icon={ShoppingCart} iconBg="bg-blue-50 text-blue-600" label="Total Orders" value={String(overview.summary.totalOrders)} /><StatCard icon={Package} iconBg="bg-orange-50 text-orange-500" label="Pending Orders" value={String(overview.summary.pendingOrders)} /></div><div className="grid grid-cols-1 gap-4 lg:grid-cols-3"><div className="lg:col-span-2"><SalesChart sales={overview.sales.length ? overview.sales : demoSales} /></div><OrdersStatusChart statuses={overview.ordersByStatus.length ? overview.ordersByStatus : demoStatuses} /></div><div className="grid grid-cols-1 gap-4 lg:grid-cols-3"><div className="lg:col-span-2"><RecentOrdersTable orders={overview.recentOrders.length ? overview.recentOrders : demoOrders} /></div><TopProductsList products={overview.topProducts.length ? overview.topProducts : demoTopProducts} /></div></>}</main><footer className="py-4 text-center text-sm text-gray-400">© 2026 IndigoStore. All rights reserved.</footer></div></div>;
+  return <div className="flex min-w-295 bg-[#f8f9fb] font-sans"><Sidebar /><div className="min-h-screen flex-1"><Header /><main className="space-y-6 p-6">{error && <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{error}</p>}{!overview && !error ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div className="h-32 animate-pulse rounded-xl border border-gray-100 bg-white/80" key={index} />)}</div> : overview && <><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard icon={ShoppingBag} iconBg="bg-indigo-50 text-indigo-600" label="Total Products" value={String(overview.summary.totalProducts)} /><StatCard icon={Users} iconBg="bg-emerald-50 text-emerald-600" label="Total Customers" value={String(overview.summary.totalCustomers)} /><StatCard icon={ShoppingCart} iconBg="bg-blue-50 text-blue-600" label="Total Orders" value={String(overview.summary.totalOrders)} /><StatCard icon={Package} iconBg="bg-orange-50 text-orange-500" label="Pending Orders" value={String(overview.summary.pendingOrders)} /></div><div className="grid grid-cols-1 gap-4 lg:grid-cols-3"><div className="lg:col-span-2"><SalesChart sales={overview.sales} /></div><OrdersStatusChart statuses={overview.ordersByStatus} /></div><div className="grid grid-cols-1 gap-4 lg:grid-cols-3"><div className="lg:col-span-2"><RecentOrdersTable orders={overview.recentOrders} /></div><TopProductsList products={overview.topProducts} /></div></>}</main><footer className="py-4 text-center text-sm text-gray-400">© 2026 IndigoStore. All rights reserved.</footer></div></div>;
 }
